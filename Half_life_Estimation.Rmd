@@ -1,0 +1,56 @@
+---
+title: "Half_life Estimation"
+output: html_notebook
+---
+
+
+```{r}
+set.seed(111)
+```
+
+### Generate some advertising data.
+The vector GRP is a vector with length 200, which is the GRP from day 1 to day 200. \
+Suppose this company doesn't purchase TV ads everyday, so on some days the GRP will be 0. A series of Bernouli random numbers are generate to determine if the day has TV ads. \
+The actual GRP delivered won't be exact the same as the amount planned, so a series of Possion random numbers are generate to simulate he GRP. I use Possion to generate integers here since it's easier to verify if the calculation is correct, the real life data will be more complex.
+```{r}
+a <- rbinom(200,1,0.6)
+b <- rpois(200,6)
+GRP <- a*b
+```
+
+### Decay rate and half-life
+Half-life is the lenght of time which will make the effectiveness of TV advertising decay to 50% of the original value. The effectiveness is represneted by TV GRP. The decay rate = 0.5 ^ (1/half-life). 
+```{r}
+rate <- 0.5 ^ (1/seq(1:70))
+```
+
+### Create a function to generate adstock
+Since the effectiveness of TV ads has carryover effect, so we use adstock to quantified the effectiveness of TV ads today and the carryover effect from previous days.\
+Adstock [i] is the adstock on day i. Adstock[1] = GRP[i] since there's no historical GRP.\
+Adstock[2] = GRP[1]*decay_rate + GRP[2].\
+Adstock[i] = Adstock[i-1]*decay_rate + GRP[i]
+```{r}
+adstock <- function(rate,grp){
+  adstk <- rep(0,length(rep))
+  adstk[1] <- grp[1]
+  for (i in 2:length(grp)){
+    adstk[i] <- rate*adstk[i-1] + grp[i]
+  }
+  return(adstk)
+}
+```
+
+### Create Adstock with half-life from 1 day to 70 days (10 weeks).
+Use a loop to create adstock with different half-life. This dataframe will be used to estimate to true half-life.
+```{r}
+m <- matrix(0,length(GRP),length(rate))
+
+for (i in 1:length(rate)){
+  m[,i] <- adstock(rate[i],GRP)
+}
+
+colnames(m) <- paste('adstock',1:70,sep="")
+
+df <- data.frame(cbind(GRP,m))
+```
+
